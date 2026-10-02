@@ -249,7 +249,7 @@
   var PLANE = "#A89C94", TRAIL = "168,156,148";
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var W = 0, H = 0, dpr = 1;
-  var SPEED = 70, TRAIL_LIFE = 3.5, SAMPLE = 0.05;
+  var SPEED = 70, TRAIL_LIFE = 4, SAMPLE = 0.05;
   var clock = 0, last = 0, wait = 1.2, dir = 1, flight = null, trails = [[], []], sampleAt = 0;
 
   function resize() {
@@ -283,20 +283,50 @@
     ctx.restore();
   }
 
+  // Flugbahn: gerade Strecke mit zwei Loopings (s = zurückgelegte Strecke in px)
   function newFlight() {
-    var top = H * (W > H ? 0.1 : 0.12), band = H * (W > H ? 0.12 : 0.16);
+    var r = Math.max(24, Math.min(45, Math.min(W, H) * 0.08));
+    var portrait = H > W;
     flight = {
-      x: dir > 0 ? -30 : W + 30,
-      base: top + Math.random() * band,
-      amp: 6 + Math.random() * 10,
-      freq: 0.004 + Math.random() * 0.004,
-      climb: (Math.random() - 0.5) * 0.08
+      s: 0,
+      r: r,
+      base: 14 + 2 * r + Math.random() * H * (portrait ? 0.12 : 0.06),
+      start: dir > 0 ? -30 : W + 30,
+      loops: [30 + W * (portrait ? 0.22 : 0.18), 30 + W * (portrait ? 0.68 : 0.78)],
+      length: W + 60 + 2 * 2 * Math.PI * r
     };
   }
 
-  function pos(f, x) {
-    var dx = dir > 0 ? x : W - x;
-    return f.base + Math.sin(dx * f.freq) * f.amp - dx * f.climb;
+  // Position in Flugrichtung (lx nach vorn, ly Höhe) für Strecke s
+  function local(f, s) {
+    var C = 2 * Math.PI * f.r, off = 0;
+    for (var i = 0; i < f.loops.length; i++) {
+      var a = f.loops[i];
+      if (s - off < a) break;
+      if (s - off < a + C) {
+        var phi = (s - off - a) / f.r;
+        return [a + f.r * Math.sin(phi), f.base - f.r * (1 - Math.cos(phi))];
+      }
+      off += C;
+    }
+    return [s - off, f.base];
+  }
+
+  function world(f, s) {
+    var p = local(f, s);
+    return [dir > 0 ? f.start + p[0] : f.start - p[0], p[1]];
+  }
+
+  function heading(f, s) {
+    var p = world(f, s), q = world(f, s + 0.5);
+    return Math.atan2(q[1] - p[1], q[0] - p[0]);
+  }
+
+  function addTrail(x, y, angle, t) {
+    var c = Math.cos(angle), s = Math.sin(angle);
+    // Triebwerke an den Flügeln
+    trails[0].push({ x: x - 3 * c + 5 * s, y: y - 3 * s - 5 * c, t: t });
+    trails[1].push({ x: x - 3 * c - 5 * s, y: y - 3 * s + 5 * c, t: t });
   }
 
   function drawTrails() {
@@ -322,19 +352,15 @@
     ctx.clearRect(0, 0, W, H);
 
     if (flight) {
-      flight.x += SPEED * dt * dir;
-      var y = pos(flight, flight.x);
-      var angle = Math.atan2(pos(flight, flight.x + dir) - y, dir);
+      flight.s += SPEED * dt;
+      var p = world(flight, flight.s), angle = heading(flight, flight.s);
       if (clock >= sampleAt) {
         sampleAt = clock + SAMPLE;
-        var c = Math.cos(angle), s = Math.sin(angle);
-        // Triebwerke an den Flügeln
-        trails[0].push({ x: flight.x - 3 * c + 5 * s, y: y - 3 * s - 5 * c, t: clock });
-        trails[1].push({ x: flight.x - 3 * c - 5 * s, y: y - 3 * s + 5 * c, t: clock });
+        addTrail(p[0], p[1], angle, clock);
       }
       drawTrails();
-      drawPlane(flight.x, y, angle);
-      if (flight.x < -40 || flight.x > W + 40) {
+      drawPlane(p[0], p[1], angle);
+      if (flight.s > flight.length) {
         flight = null;
         dir = -dir;
         wait = clock + 4 + Math.random() * 4;
@@ -347,20 +373,20 @@
   }
 
   function drawStatic() {
-    // Reduzierte Bewegung: ruhendes Flugzeug mit verblassender Spur
+    // Reduzierte Bewegung: ruhendes Flugzeug kurz nach dem ersten Looping
     ctx.clearRect(0, 0, W, H);
     dir = 1;
     newFlight();
-    var endX = W * 0.72, angle = Math.atan2(pos(flight, endX + 1) - pos(flight, endX), 1);
+    var end = flight.loops[0] + 2 * Math.PI * flight.r + 40, span = SPEED * TRAIL_LIFE;
     clock = TRAIL_LIFE;
     trails = [[], []];
-    for (var x = endX - SPEED * TRAIL_LIFE; x <= endX; x += 4) {
-      var y = pos(flight, x), t = (x - (endX - SPEED * TRAIL_LIFE)) / SPEED;
-      trails[0].push({ x: x, y: y - 5, t: t });
-      trails[1].push({ x: x, y: y + 5, t: t });
+    for (var s = Math.max(0, end - span); s <= end; s += 3) {
+      var p = world(flight, s);
+      addTrail(p[0], p[1], heading(flight, s), (s - (end - span)) / SPEED);
     }
     drawTrails();
-    drawPlane(endX, pos(flight, endX), angle);
+    var e = world(flight, end);
+    drawPlane(e[0], e[1], heading(flight, end));
   }
 
   resize();
