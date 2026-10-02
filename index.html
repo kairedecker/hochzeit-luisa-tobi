@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Luisa &amp; Tobi – alles Liebe zur Hochzeit</title>
+<meta name="description" content="Alles Liebe und Gute zur Hochzeit, Luisa &amp; Tobi! 03.10.2026">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#14315C">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314315C'/%3E%3Ctext x='16' y='21' font-family='sans-serif' font-size='13' font-weight='700' fill='%23fff' text-anchor='middle'%3ELT%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --navy: #14315C;
+    --petrol: #0F5C66;
+    --white: #FFFFFF;
+    --paper: #F7F8FA;
+    --muted: #5B6B80;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+             max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    background: var(--paper);
+    color: var(--navy);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+    text-align: center;
+    overflow-x: hidden;
+  }
+  /* Farbband oben und unten wie auf den Boardingpässen */
+  body::before, body::after {
+    content: "";
+    position: fixed;
+    left: 0; right: 0;
+    height: 8px;
+    background: linear-gradient(90deg, var(--navy) 0 60%, var(--petrol) 60% 100%);
+  }
+  body::before { top: 0; }
+  body::after { bottom: 0; }
+
+  main { position: relative; z-index: 1; max-width: 34rem; width: 100%; }
+
+  .eyebrow {
+    margin: 0 0 1.25rem;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--petrol);
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(2.6rem, 13vw, 4.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -.02em;
+  }
+  h1 .amp { color: var(--petrol); font-weight: 400; }
+  .rule {
+    width: 3rem;
+    height: 2px;
+    margin: 1.5rem auto;
+    background: var(--petrol);
+    border: 0;
+  }
+  .wish {
+    margin: 0;
+    font-size: clamp(1.15rem, 5vw, 1.5rem);
+    line-height: 1.4;
+    font-weight: 400;
+  }
+  .flight {
+    margin: 2.5rem 0 0;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .flight span { white-space: nowrap; }
+  @media (max-width: 26rem) {
+    .flight span { display: block; }
+    .flight .sep { display: none; }
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Querformat auf kleinen Geräten: kompakter */
+  @media (orientation: landscape) and (max-height: 480px) {
+    .eyebrow { margin-bottom: .6rem; }
+    h1 { font-size: clamp(2rem, 8vh + 1rem, 3.2rem); }
+    .rule { margin: .9rem auto; }
+    .flight { margin-top: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">03. Oktober 2026</p>
+  <h1>Luisa <span class="amp">&amp;</span> Tobi</h1>
+  <hr class="rule">
+  <p class="wish">alles Liebe und Gute zur Hochzeit</p>
+  <p class="flight" aria-label="Flug LT 0310 am 3. Oktober 2026 von Ketsch nach Australien, Neuseeland und Fidschi">
+    <span>LT 0310 · 03 OKT 2026</span><span class="sep"> · </span><span>KET → AUS · NZL · FJI</span>
+  </p>
+</main>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<script>
+(function () {
+  "use strict";
+  var canvas = document.getElementById("confetti");
+  var ctx = canvas.getContext && canvas.getContext("2d");
+  if (!ctx) return;
+
+  var COLORS = ["#14315C", "#0F5C66", "#2E6BA8", "#3A9AA6", "#A9C4DE", "#C9E3E6"];
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var W = 0, H = 0, dpr = 1, pieces = [], running = false, last = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  function makePiece(staticMode) {
+    var size = rand(6, 11);
+    return {
+      x: rand(0, W),
+      y: staticMode ? rand(0, H) : rand(-H * 0.7, -10),
+      w: size,
+      h: size * rand(0.4, 0.7),
+      color: COLORS[(Math.random() * COLORS.length) | 0],
+      rot: rand(0, Math.PI * 2),
+      vr: rand(-4, 4),          // rad/s
+      vy: rand(60, 140),        // px/s
+      sway: rand(0.8, 2.2),     // Frequenz
+      swayAmp: rand(15, 45),    // px/s
+      phase: rand(0, Math.PI * 2),
+      flip: rand(2, 6)          // Kippgeschwindigkeit
+    };
+  }
+
+  function count() {
+    // Menge an Fläche anpassen, gedeckelt für ältere Geräte
+    return Math.max(60, Math.min(160, Math.round((W * H) / 5000)));
+  }
+
+  function draw(p, t) {
+    var scaleY = Math.cos(p.phase + t * p.flip);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.scale(1, scaleY < 0 ? -scaleY : scaleY || 0.05);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    ctx.restore();
+  }
+
+  function frame(now) {
+    var dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    var t = now / 1000;
+    ctx.clearRect(0, 0, W, H);
+    var alive = 0;
+    for (var i = 0; i < pieces.length; i++) {
+      var p = pieces[i];
+      if (p.y > H + 20) continue;
+      p.y += p.vy * dt;
+      p.x += Math.sin(p.phase + t * p.sway) * p.swayAmp * dt;
+      p.rot += p.vr * dt;
+      draw(p, t);
+      alive++;
+    }
+    if (alive) {
+      requestAnimationFrame(frame);
+    } else {
+      running = false;
+      ctx.clearRect(0, 0, W, H);
+    }
+  }
+
+  function burst() {
+    var n = count();
+    for (var i = 0; i < n; i++) pieces.push(makePiece(false));
+    // Bereits gelandete Stücke entfernen
+    pieces = pieces.filter(function (p) { return p.y <= H + 20; });
+    if (!running) {
+      running = true;
+      last = performance.now();
+      requestAnimationFrame(frame);
+    }
+  }
+
+  function drawStatic() {
+    // Reduzierte Bewegung: wenige ruhende Konfetti, keine Animation
+    ctx.clearRect(0, 0, W, H);
+    pieces = [];
+    var n = Math.round(count() / 3);
+    for (var i = 0; i < n; i++) {
+      var p = makePiece(true);
+      // Mitte für den Text freihalten
+      if (Math.abs(p.y - H / 2) < H * 0.22 && Math.abs(p.x - W / 2) < W * 0.4) continue;
+      draw(p, 0);
+    }
+  }
+
+  resize();
+  if (reduce) {
+    drawStatic();
+    window.addEventListener("resize", function () { resize(); drawStatic(); });
+  } else {
+    window.addEventListener("resize", resize);
+    burst();
+    // Antippen lässt es noch einmal regnen
+    document.addEventListener("click", burst);
+  }
+})();
+</script>
+</body>
+</html>
