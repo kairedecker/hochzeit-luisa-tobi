@@ -101,6 +101,7 @@
     pointer-events: none;
     z-index: 2;
   }
+  #sky { z-index: 0; }
 
   /* Querformat auf kleinen Geräten: kompakter */
   @media (orientation: landscape) and (max-height: 480px) {
@@ -121,6 +122,7 @@
     <span>LT 0310 · 03 OKT 2026</span><span class="sep"> · </span><span>KET → AUS · NZL · FJI</span>
   </p>
 </main>
+<canvas id="sky" aria-hidden="true"></canvas>
 <canvas id="confetti" aria-hidden="true"></canvas>
 <script>
 (function () {
@@ -235,6 +237,140 @@
     burst();
     // Antippen lässt es noch einmal regnen
     document.addEventListener("click", burst);
+  }
+})();
+/* Kleines Flugzeug im Hintergrund mit Kondensstreifen, die sich auflösen */
+(function () {
+  "use strict";
+  var canvas = document.getElementById("sky");
+  var ctx = canvas.getContext && canvas.getContext("2d");
+  if (!ctx) return;
+
+  var PLANE = "#A89C94", TRAIL = "168,156,148";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var W = 0, H = 0, dpr = 1;
+  var SPEED = 70, TRAIL_LIFE = 3.5, SAMPLE = 0.05;
+  var clock = 0, last = 0, wait = 1.2, dir = 1, flight = null, trails = [[], []], sampleAt = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function shape(points) {
+    ctx.beginPath();
+    ctx.moveTo(points[0], points[1]);
+    for (var i = 2; i < points.length; i += 2) ctx.lineTo(points[i], points[i + 1]);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Draufsicht, Nase zeigt nach +x
+  function drawPlane(x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = PLANE;
+    shape([11, 0, 8, -1.5, -8, -1.2, -10, 0, -8, 1.2, 8, 1.5]);
+    shape([3, -1, -3, -10, -5, -10, -2, -1]);
+    shape([3, 1, -3, 10, -5, 10, -2, 1]);
+    shape([-6, -1, -9, -4.5, -10.5, -4.5, -9, -1]);
+    shape([-6, 1, -9, 4.5, -10.5, 4.5, -9, 1]);
+    ctx.restore();
+  }
+
+  function newFlight() {
+    var top = H * (W > H ? 0.1 : 0.12), band = H * (W > H ? 0.12 : 0.16);
+    flight = {
+      x: dir > 0 ? -30 : W + 30,
+      base: top + Math.random() * band,
+      amp: 6 + Math.random() * 10,
+      freq: 0.004 + Math.random() * 0.004,
+      climb: (Math.random() - 0.5) * 0.08
+    };
+  }
+
+  function pos(f, x) {
+    var dx = dir > 0 ? x : W - x;
+    return f.base + Math.sin(dx * f.freq) * f.amp - dx * f.climb;
+  }
+
+  function drawTrails() {
+    for (var k = 0; k < 2; k++) {
+      var tr = trails[k];
+      while (tr.length && clock - tr[0].t > TRAIL_LIFE) tr.shift();
+      for (var i = 1; i < tr.length; i++) {
+        var age = (clock - tr[i].t) / TRAIL_LIFE;
+        ctx.strokeStyle = "rgba(" + TRAIL + "," + (0.55 * (1 - age)).toFixed(3) + ")";
+        ctx.lineWidth = 1.2 + age * 4;
+        ctx.beginPath();
+        ctx.moveTo(tr[i - 1].x, tr[i - 1].y);
+        ctx.lineTo(tr[i].x, tr[i].y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function frame(now) {
+    var dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    clock += dt;
+    ctx.clearRect(0, 0, W, H);
+
+    if (flight) {
+      flight.x += SPEED * dt * dir;
+      var y = pos(flight, flight.x);
+      var angle = Math.atan2(pos(flight, flight.x + dir) - y, dir);
+      if (clock >= sampleAt) {
+        sampleAt = clock + SAMPLE;
+        var c = Math.cos(angle), s = Math.sin(angle);
+        // Triebwerke an den Flügeln
+        trails[0].push({ x: flight.x - 3 * c + 5 * s, y: y - 3 * s - 5 * c, t: clock });
+        trails[1].push({ x: flight.x - 3 * c - 5 * s, y: y - 3 * s + 5 * c, t: clock });
+      }
+      drawTrails();
+      drawPlane(flight.x, y, angle);
+      if (flight.x < -40 || flight.x > W + 40) {
+        flight = null;
+        dir = -dir;
+        wait = clock + 4 + Math.random() * 4;
+      }
+    } else {
+      drawTrails();
+      if (clock >= wait) newFlight();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function drawStatic() {
+    // Reduzierte Bewegung: ruhendes Flugzeug mit verblassender Spur
+    ctx.clearRect(0, 0, W, H);
+    dir = 1;
+    newFlight();
+    var endX = W * 0.72, angle = Math.atan2(pos(flight, endX + 1) - pos(flight, endX), 1);
+    clock = TRAIL_LIFE;
+    trails = [[], []];
+    for (var x = endX - SPEED * TRAIL_LIFE; x <= endX; x += 4) {
+      var y = pos(flight, x), t = (x - (endX - SPEED * TRAIL_LIFE)) / SPEED;
+      trails[0].push({ x: x, y: y - 5, t: t });
+      trails[1].push({ x: x, y: y + 5, t: t });
+    }
+    drawTrails();
+    drawPlane(endX, pos(flight, endX), angle);
+  }
+
+  resize();
+  if (reduce) {
+    drawStatic();
+    window.addEventListener("resize", function () { resize(); drawStatic(); });
+  } else {
+    window.addEventListener("resize", function () { resize(); flight = null; trails = [[], []]; wait = clock + 1; });
+    last = performance.now();
+    requestAnimationFrame(frame);
   }
 })();
 </script>
