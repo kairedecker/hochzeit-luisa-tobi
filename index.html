@@ -6,17 +6,18 @@
 <title>Luisa &amp; Tobi – alles Liebe zur Hochzeit</title>
 <meta name="description" content="Alles Liebe und Gute zur Hochzeit, Luisa &amp; Tobi! 03.10.2026">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#14315C">
+<meta name="theme-color" content="#7A3E36">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314315C'/%3E%3Ctext x='16' y='21' font-family='sans-serif' font-size='13' font-weight='700' fill='%23fff' text-anchor='middle'%3ELT%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%237A3E36'/%3E%3Ctext x='16' y='21' font-family='sans-serif' font-size='13' font-weight='700' fill='%23fff' text-anchor='middle'%3ELT%3C/text%3E%3C/svg%3E">
 <style>
   :root {
-    --navy: #14315C;
-    --petrol: #0F5C66;
-    --white: #FFFFFF;
-    --paper: #F7F8FA;
-    --muted: #5B6B80;
+    --paper: #ECE8E1;   /* Hintergrund, Greige */
+    --accent: #7A3E36;  /* Rostrot, Kopfzeile und Hervorhebungen */
+    --ink: #2B2220;     /* Haupttext */
+    --muted: #5F514B;   /* Nebentext */
+    --line: #A89C94;    /* Linien und Rahmen */
+    --on-accent: #FFFFFF;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
@@ -29,23 +30,21 @@
     padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
              max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
     background: var(--paper);
-    color: var(--navy);
+    color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -webkit-text-size-adjust: 100%;
     text-align: center;
     overflow-x: hidden;
   }
-  /* Farbband oben und unten wie auf den Boardingpässen */
+  /* Kopfzeile in Akzentfarbe wie auf den Boardingpässen, unten eine feine Linie */
   body::before, body::after {
     content: "";
     position: fixed;
     left: 0; right: 0;
-    height: 8px;
-    background: linear-gradient(90deg, var(--navy) 0 60%, var(--petrol) 60% 100%);
   }
-  body::before { top: 0; }
-  body::after { bottom: 0; }
+  body::before { top: 0; height: 8px; background: var(--accent); }
+  body::after { bottom: 0; height: 1px; background: var(--line); }
 
   main { position: relative; z-index: 1; max-width: 34rem; width: 100%; }
 
@@ -55,7 +54,7 @@
     font-weight: 600;
     letter-spacing: .22em;
     text-transform: uppercase;
-    color: var(--petrol);
+    color: var(--accent);
   }
   h1 {
     margin: 0;
@@ -64,12 +63,12 @@
     line-height: 1.05;
     letter-spacing: -.02em;
   }
-  h1 .amp { color: var(--petrol); font-weight: 400; }
+  h1 .amp { color: var(--accent); font-weight: 400; }
   .rule {
     width: 3rem;
     height: 2px;
     margin: 1.5rem auto;
-    background: var(--petrol);
+    background: var(--accent);
     border: 0;
   }
   .wish {
@@ -80,6 +79,8 @@
   }
   .flight {
     margin: 2.5rem 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px dashed var(--line);
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
     font-size: .72rem;
     letter-spacing: .08em;
@@ -106,7 +107,7 @@
     .eyebrow { margin-bottom: .6rem; }
     h1 { font-size: clamp(2rem, 8vh + 1rem, 3.2rem); }
     .rule { margin: .9rem auto; }
-    .flight { margin-top: 1.25rem; }
+    .flight { margin-top: 1.25rem; padding-top: .9rem; }
   }
 </style>
 </head>
@@ -128,7 +129,7 @@
   var ctx = canvas.getContext && canvas.getContext("2d");
   if (!ctx) return;
 
-  var COLORS = ["#E63946", "#F3722C", "#F9C74F", "#90BE6D", "#43AA8B", "#277DA1", "#9B5DE5", "#F15BB5", "#14315C", "#0F5C66"];
+  var COLORS = ["#E63946", "#F3722C", "#F9C74F", "#90BE6D", "#43AA8B", "#277DA1", "#9B5DE5", "#F15BB5", "#7A3E36"];
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var W = 0, H = 0, dpr = 1, pieces = [], running = false, last = 0;
 
